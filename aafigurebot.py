@@ -1,9 +1,12 @@
 import re
 import tempfile
+import logging
 
 import aafigure
 
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class AAFigureBotHandler:
@@ -25,18 +28,19 @@ class AAFigureBotHandler:
         quoted_name = bot_handler.identity().mention
         content = message["content"].strip()
 
-        if content in ["help", "doc"]:
-            bot_handler.send_reply(
-                message,
-                "The aafigure documentation can be found here: [https://aafigure.readthedocs.io/en/latest/shortintro.html](https://aafigure.readthedocs.io/en/latest/shortintro.html)",
-            )
-        else:
-            try:
+        try:
+            if content in ["help", "doc"]:
+                bot_handler.send_reply(
+                    message,
+                    "The aafigure documentation can be found here: [https://aafigure.readthedocs.io/en/latest/shortintro.html](https://aafigure.readthedocs.io/en/latest/shortintro.html)",
+                )
+            else:
                 _, drawing, *_ = content.split("```", 2)
 
                 img = tempfile.TemporaryFile(prefix="aafigure-", suffix=".svg")
                 aafigure.aafigure.render(drawing, img, options={"format": "svg"})
                 result = bot_handler.upload_file(img)
+                logger.debug(result)
                 if result["result"] == "success":
                     response = "[]({})".format(result["uri"])
                     bot_handler.send_reply(message, response)
@@ -44,12 +48,17 @@ class AAFigureBotHandler:
                     bot_handler.send_reply(
                         message, "Sorry, I failed to upload the image"
                     )
-            except aafigure.UnsupportedFormatError as err:
-                pass
-            except ValueError:
-                bot_handler.send_reply(
-                    message, "Sorry, I couldn't find drawing instructions"
-                )
+        except aafigure.UnsupportedFormatError as err:
+            pass
+        except ValueError:
+            bot_handler.send_reply(
+                message, "Sorry, I couldn't find drawing instructions"
+            )
+        except Exception as err:
+            logger.exception(err)
+            bot_handler.send_reply(
+                message, "Sorry, I didn't prepare for unforseen consequences"
+            )
 
 
 handler_class = AAFigureBotHandler
