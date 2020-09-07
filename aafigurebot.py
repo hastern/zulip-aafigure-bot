@@ -39,7 +39,7 @@ class AAFigureBotHandler:
 
                 img = tempfile.TemporaryFile(prefix="aafigure-", suffix=".svg")
                 aafigure.aafigure.render(drawing, img, options={"format": "svg"})
-                result = bot_handler.upload_file(img)
+                result = bot_handler.upload_file(img.name)
                 logger.debug(result)
                 if result["result"] == "success":
                     response = "[]({})".format(result["uri"])
