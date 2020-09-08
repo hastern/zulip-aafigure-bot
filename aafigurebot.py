@@ -1,6 +1,7 @@
 import re
-import tempfile
+import uuid
 import logging
+import pathlib
 
 import aafigure
 
@@ -37,11 +38,11 @@ class AAFigureBotHandler:
             else:
                 _, drawing, *_ = content.split("```", 2)
 
-                img = tempfile.TemporaryFile(prefix="aafigure-", suffix=".svg")
-                aafigure.aafigure.render(drawing, img, options={"format": "svg"})
-                img.seek(0)
-                result = bot_handler.upload_file(img)
-                logger.debug(result)
+                img = pathlib.Path("aafigure-{}.svg".format(uuid.uuid1()))
+                with open(img, "wb") as fHnd:
+                    aafigure.aafigure.render(drawing, fHnd, options={"format": "svg"})
+                result = bot_handler.upload_file_from_path(img)
+                logger.info(result)
                 if result["result"] == "success":
                     response = "[]({})".format(result["uri"])
                     bot_handler.send_reply(message, response)
@@ -49,6 +50,7 @@ class AAFigureBotHandler:
                     bot_handler.send_reply(
                         message, "Sorry, I failed to upload the image"
                     )
+                img.unlink()
         except aafigure.UnsupportedFormatError as err:
             pass
         except ValueError:
