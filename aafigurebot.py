@@ -36,11 +36,11 @@ class AAFigureBotHandler:
                     "The aafigure documentation can be found here: [https://aafigure.readthedocs.io/en/latest/shortintro.html](https://aafigure.readthedocs.io/en/latest/shortintro.html)",
                 )
             else:
+                img = pathlib.Path("aafigure-{}.png".format(uuid.uuid1()))
                 _, drawing, *_ = content.split("```", 2)
 
-                img = pathlib.Path("aafigure-{}.svg".format(uuid.uuid1()))
                 with open(img, "wb") as fHnd:
-                    aafigure.aafigure.render(drawing, fHnd, options={"format": "svg"})
+                    aafigure.aafigure.render(drawing, fHnd, options={"format": "png"})
                 result = bot_handler.upload_file_from_path(img)
                 logger.info(result)
                 if result["result"] == "success":
@@ -52,7 +52,8 @@ class AAFigureBotHandler:
                     )
                 img.unlink()
         except aafigure.UnsupportedFormatError as err:
-            pass
+            logger.error(err)
+            bot_handler.send_reply(message, "Sorry, the image format is not supported")
         except ValueError:
             bot_handler.send_reply(
                 message, "Sorry, I couldn't find drawing instructions"
